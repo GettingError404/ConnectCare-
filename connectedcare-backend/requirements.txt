@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+pgvector
+psycopg2-binary
+email-validator
+alembic
+python-jose
+passlib[bcrypt]
+httpx
+pytest
+pytest-timeout
+celery
+redis
+flower

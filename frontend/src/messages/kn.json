@@ -1,0 +1,34 @@
+{
+  "appName": "ಕನೆಕ್ಟೆಡ್ ಕೇರ್+",
+  "welcome": "ConnectedCare+ ಗೆ ಸುಸ್ವಾಗತ",
+  "login": {
+    "heading": "ಸೈನ್ ಇನ್ ಮಾಡಿ",
+    "email": "ಇಮೇಲ್",
+    "password": "ಪಾಸ್ವರ್ಡ್",
+    "submit": "ಸೈನ್ ಇನ್ ಮಾಡಿ",
+    "newAccount": "ಖಾತೆ ಸೃಷ್ಟಿಸಿ"
+  },
+  "register": {
+    "heading": "ConnectedCare+ ಗೆ ಸೇರಿ",
+    "elder": "ನಾನು ಹಿರಿಯ ಎಂದು",
+    "family": "ನಾನು ಕುಟುಂಬದ ಸದಸ್ಯ",
+    "caregiver": "ನಾನು ಆರೈಕೆದಾರ"
+  },
+  "settings": {
+    "title": "ಸೆಟ್ಟಿಂಗ್ಸ್",
+    "subtitle": "ಖಾತೆ ಮತ್ತು ಅಧಿಸೂಚನೆ ಆದ್ಯತೆಗಳು",
+    "signOut": "ಸೈನ್ ಔಟ್",
+    "profile": "ಪ್ರೊಫೈಲ್ ಸೆಟ್ಟಿಂಗ್ಸ್",
+    "profileDesc": "ಹೆಸರು ಮತ್ತು ಸಂಪರ್ಕ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ",
+    "notifications": "ಅಧಿಸೂಚನೆ ಆದ್ಯತೆಗಳು",
+    "notificationsDesc": "ಎಚ್ಚರಿಕೆ ಮಿತಿಗಳು ಮತ್ತು ಚಾನೆಲ್‌ಗಳು",
+    "privacy": "ಗೌಪ್ಯತೆ ಮತ್ತು ಭದ್ರತೆ",
+    "privacyDesc": "ಪಾಸ್ವರ್ಡ್ ಮತ್ತು ಡೇಟಾ ಹಂಚಿಕೆ",
+    "language": "ಭಾಷೆ",
+    "languageDesc": "ಆಪ್‌ಗೆ ಇಷ್ಟದ ಭಾಷೆಯನ್ನು ಆರಿಸಿ"
+  },
+  "notFound": {
+    "title": "ಪುಟ ಸಿಗಲಿಲ್ಲ",
+    "return": "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತೆಗೆ"
+  }
+}

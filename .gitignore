@@ -1,0 +1,291 @@
+# =========================================
+# ROOT GITIGNORE
+# ConnectCare Project
+# =========================================
+
+
+# =========================================
+# ENV FILES
+# =========================================
+.env
+.env.*
+*.env
+
+
+# =========================================
+# PYTHON BACKEND
+# =========================================
+
+# Virtual Environment
+venv/
+ENV/
+env/
+connectedcare-backend/venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# FastAPI / Python
+*.sqlite3
+*.db
+
+# Alembic cache
+alembic/__pycache__/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# VS Code Python
+.python-version
+
+# Python
+venv/
+connectedcare-backend/venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Next.js
+.next/
+frontend/.next/
+
+# Env
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+# =========================================
+# NODE / NEXT.JS FRONTEND
+# =========================================
+
+# Node Modules
+node_modules/
+frontend/node_modules/
+
+# Next.js
+.next/
+frontend/.next/
+
+# Build folders
+dist/
+build/
+out/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Lock files (OPTIONAL)
+# Uncomment only if team agrees
+# package-lock.json
+# bun.lockb
+
+
+# =========================================
+# IDE FILES
+# =========================================
+
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+# =========================================
+# CACHE FILES
+# =========================================
+
+.cache/
+.temp/
+tmp/
+
+
+# =========================================
+# GENERATED FILES
+# =========================================
+
+*.pid
+*.seed
+*.out
+
+
+# =========================================
+# TEST / COVERAGE
+# =========================================
+
+coverage/
+.nyc_output/
+
+
+# =========================================
+# DOCKER
+# =========================================
+
+docker-compose.override.yml
+
+
+# =========================================
+# TYPESCRIPT
+# =========================================
+
+*.tsbuildinfo
+
+
+# =========================================
+# SECRETS
+# =========================================
+
+secret/
+secrets/
+credentials.json
+# =========================
+# ROOT IGNORE
+# =========================
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node modules
+node_modules/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Build folders
+dist/
+build/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+coverage/
+.pytest_cache/
+
+# Runtime
+*.pid
+
+# Mac/Linux
+*.swp
+
+# =========================
+# BACKEND
+# =========================
+
+connectedcare-backend/venv/
+connectedcare-backend/__pycache__/
+connectedcare-backend/.pytest_cache/
+
+# =========================
+# FRONTEND
+# =========================
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# =========================
+# ENV FILES
+# =========================
+
+frontend/.env
+frontend/.env.local
+connectedcare-backend/.env
+agent/.env
+
+# =========================
+# LOCK FILES (optional)
+# =========================
+
+*.lock
+# =========================
+# ROOT
+# =========================
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# =========================
+# PYTHON / BACKEND
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+
+# Alembic
+alembic/versions/__pycache__/
+
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+.next/
+out/
+dist/
+build/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS
+# =========================
+desktop.ini

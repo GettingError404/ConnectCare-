@@ -1,0 +1,202 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hello
+    - hi
+    - hey
+    - good morning
+    - good evening
+    - howdy
+    - what's up
+    - hey there
+
+- intent: farewell
+  examples: |
+    - bye
+    - goodbye
+    - see you later
+    - have a good day
+    - talk to you later
+    - take care
+
+- intent: thanks
+  examples: |
+    - thanks
+    - thank you
+    - thank you so much
+    - that was helpful
+    - great thanks
+    - cheers
+
+- intent: get_weather
+  examples: |
+    - what's the weather like
+    - what is the weather in [Mumbai](location)
+    - weather forecast for [London](location)
+    - is it going to rain in [Paris](location)
+    - temperature in [Tokyo](location)
+    - how hot is it in [Dubai](location)
+    - weather today
+    - current weather
+    - will it snow in [New York](location)
+    - weather for [Berlin](location) tomorrow
+    - what should I wear today
+
+- intent: set_timer
+  examples: |
+    - set a timer for [5 minutes](duration)
+    - timer for [10 minutes](duration)
+    - set [30 second](duration) timer
+    - remind me in [2 hours](duration)
+    - countdown for [15 minutes](duration)
+    - start a [1 hour](duration) timer
+    - set timer [45 minutes](duration)
+    - alert me in [5 minutes](duration)
+
+- intent: cancel_timer
+  examples: |
+    - cancel timer
+    - stop the timer
+    - cancel all timers
+    - delete timer
+
+- intent: check_timer
+  examples: |
+    - how much time is left
+    - check timer
+    - timer status
+    - how long until the timer
+
+- intent: play_music
+  examples: |
+    - play some music
+    - play [jazz](genre) music
+    - play [Coldplay](artist)
+    - play [Yellow](song) by [Coldplay](artist)
+    - I want to listen to [classical](genre)
+    - put on some [hip hop](genre)
+    - play music by [Taylor Swift](artist)
+    - start music
+    - shuffle my playlist
+
+- intent: pause_music
+  examples: |
+    - pause the music
+    - stop music
+    - pause
+
+- intent: next_song
+  examples: |
+    - next song
+    - skip this
+    - next track
+
+- intent: volume_up
+  examples: |
+    - turn up the volume
+    - louder
+    - increase volume
+    - volume up
+
+- intent: volume_down
+  examples: |
+    - turn down the volume
+    - quieter
+    - lower the volume
+    - volume down
+
+- intent: get_news
+  examples: |
+    - what's in the news
+    - latest headlines
+    - tell me the news
+    - news about [technology](topic)
+    - what's happening in [sports](topic)
+    - current events
+    - top stories today
+    - news update
+
+- intent: get_time
+  examples: |
+    - what time is it
+    - what's the time
+    - current time
+    - tell me the time
+    - time right now
+
+- intent: get_date
+  examples: |
+    - what's today's date
+    - what day is it
+    - what is the date today
+    - today's date
+
+- intent: set_reminder
+  examples: |
+    - remind me to [call mom](message) in [1 hour](duration)
+    - set a reminder for [meeting at 3pm](message)
+    - remind me about [dentist appointment](message)
+    - create a reminder to [buy groceries](message)
+    - don't let me forget to [take medicine](message)
+
+- intent: tell_joke
+  examples: |
+    - tell me a joke
+    - say something funny
+    - make me laugh
+    - got any jokes
+    - tell me something funny
+    - I need a laugh
+
+- intent: search_web
+  examples: |
+    - search for [Python tutorials](query)
+    - look up [best restaurants near me](query)
+    - google [how to make pasta](query)
+    - find information about [machine learning](query)
+    - who is [Elon Musk](query)
+    - what is [quantum computing](query)
+    - search [latest iPhone](query)
+
+- intent: get_definition
+  examples: |
+    - define [serendipity](word)
+    - what does [ephemeral](word) mean
+    - definition of [ubiquitous](word)
+    - explain [photosynthesis](word)
+    - what is [entropy](word)
+    - meaning of [eloquent](word)
+    - dictionary [melancholy](word)
+
+- intent: turn_on
+  examples: |
+    - turn on the [lights](device)
+    - switch on the [fan](device) in the [bedroom](room)
+    - turn on [air conditioning](device)
+    - activate the [heater](device)
+    - lights on in [living room](room)
+
+- intent: turn_off
+  examples: |
+    - turn off the [lights](device)
+    - switch off the [TV](device)
+    - lights off in [kitchen](room)
+    - deactivate [alarm](device)
+
+- intent: set_temperature
+  examples: |
+    - set thermostat to [72 degrees](value)
+    - make it [70 degrees](value) in the [bedroom](room)
+    - temperature to [68](value)
+    - set AC to [75](value)
+
+- intent: general_question
+  examples: |
+    - how does gravity work
+    - who invented the telephone
+    - what is the capital of France
+    - how tall is Mount Everest
+    - when was the Eiffel Tower built
+    - what is the speed of light

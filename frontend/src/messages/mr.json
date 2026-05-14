@@ -1,0 +1,34 @@
+{
+  "appName": "कनेक्टेडकेअर+",
+  "welcome": "ConnectedCare+ मध्ये तुमचे स्वागत आहे",
+  "login": {
+    "heading": "साईन इन करा",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "submit": "साईन इन करा",
+    "newAccount": "खाते तयार करा"
+  },
+  "register": {
+    "heading": "ConnectedCare+ मध्ये सामील व्हा",
+    "elder": "मी एक ज्येष्ठ आहे",
+    "family": "मी कुटुंब सदस्य आहे",
+    "caregiver": "मी एक काळजीवाहू आहे"
+  },
+  "settings": {
+    "title": "सेटिंग्ज",
+    "subtitle": "खाते आणि सूचना प्राधान्ये",
+    "signOut": "साइन आउट",
+    "profile": "प्रोफाइल सेटिंग्ज",
+    "profileDesc": "नाव आणि संपर्क माहिती अपडेट करा",
+    "notifications": "सूचना प्राधान्ये",
+    "notificationsDesc": "अलर्ट मर्यादा आणि चॅनल",
+    "privacy": "गोपनीयता आणि सुरक्षितता",
+    "privacyDesc": "पासवर्ड आणि डेटा शेअरिंग",
+    "language": "भाषा",
+    "languageDesc": "अॅपसाठी पसंतीची भाषा निवडा"
+  },
+  "notFound": {
+    "title": "पृष्ठ सापडले नाही",
+    "return": "मुख्य पृष्ठावर परत जा"
+  }
+}
