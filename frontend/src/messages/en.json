@@ -1,0 +1,34 @@
+{
+  "appName": "ConnectedCare+",
+  "welcome": "Welcome to ConnectedCare+",
+  "login": {
+    "heading": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "newAccount": "Create account"
+  },
+  "register": {
+    "heading": "Join ConnectedCare+",
+    "elder": "I am an Elder",
+    "family": "I am a Family Member",
+    "caregiver": "I am a Caregiver"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Account and notification preferences",
+    "signOut": "Sign Out",
+    "profile": "Profile Settings",
+    "profileDesc": "Update name, contact info",
+    "notifications": "Notification Preferences",
+    "notificationsDesc": "Alert thresholds, channels",
+    "privacy": "Privacy & Security",
+    "privacyDesc": "Password, data sharing",
+    "language": "Language",
+    "languageDesc": "Choose your preferred app language"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "return": "Return to Home"
+  }
+}

@@ -1,0 +1,52 @@
+# VoiceOS Requirements
+# Install: pip install -r requirements.txt
+
+# ─── Core Framework ────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0.0
+aiohttp>=3.9.0
+
+# ─── Speech-to-Text ────────────────────────────────────────────
+vosk>=0.3.45                    # Primary offline STT (requires model download)
+# openai-whisper>=20231117      # Optional: high-accuracy fallback STT
+
+# ─── Audio I/O ─────────────────────────────────────────────────
+pyaudio>=0.2.14                 # Microphone input and audio output
+sounddevice>=0.5.0              # Cross-platform audio I/O (microphone streaming)
+soundfile>=0.12.1               # Audio file handling
+# pvporcupine>=3.0.0            # Optional: Porcupine wake word (requires API key)
+
+# ─── Language Detection ────────────────────────────────────────
+lingua-language-detector>=2.0.0 # Best language detector (primary)
+langdetect>=1.0.9               # Fallback language detector
+
+# ─── Translation ───────────────────────────────────────────────
+# LibreTranslate is self-hosted, no pip package needed
+# argostranslate>=1.9.6         # Optional: offline translation
+
+# ─── NLP ───────────────────────────────────────────────────────
+# Rasa is standalone server - install separately:
+# pip install rasa && rasa init
+# Ollama is a standalone binary - install from ollama.ai
+
+# ─── Sentiment Analysis ────────────────────────────────────────
+vaderSentiment>=3.3.2           # Fast offline sentiment analysis
+# transformers>=4.30.0          # Optional: deep sentiment (GPU recommended)
+# torch>=2.0.0                  # Required if using transformers
+
+# ─── TTS ───────────────────────────────────────────────────────
+pyttsx3>=2.90                   # Offline TTS (uses system voices)
+gTTS>=2.5.0                     # Google TTS (requires internet)
+# TTS>=0.22.0                   # Optional: Coqui TTS (best quality)
+pygame>=2.5.0                   # MP3 audio playback
+playsound>=1.3.0                # Alternative audio playback
+
+# ─── Utilities ─────────────────────────────────────────────────
+python-dotenv>=1.0.0            # .env file support
+rich>=13.0.0                    # Beautiful terminal output
+
+# ─── Testing ───────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0                   # For testing FastAPI endpoints

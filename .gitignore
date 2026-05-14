@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node.js
+node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# AI models
+agent/models/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build folders
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db

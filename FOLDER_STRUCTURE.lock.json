@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "asha-folder-structure",
+  "lockedAt": "2026-05-14T00:00:00Z",
+  "allowedTopLevelFolders": [
+    "agent",
+    "backend",
+    "frontend"
+  ],
+  "notes": "Guard against accidental top-level folder renames/removals/additions. Enforced via scripts added to backend/frontend and via root script. Update this file intentionally when structure changes." 
+}
+

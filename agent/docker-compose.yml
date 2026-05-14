@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+
+  # ─── VoiceOS Core API ───────────────────────────────────────
+  voiceos-api:
+    build: .
+    container_name: voiceos-api
+    ports:
+      - "8000:8000"
+    environment:
+      - RASA_URL=http://rasa:5005
+      - OLLAMA_URL=http://ollama:11434
+      - LIBRETRANSLATE_URL=http://libretranslate:5000
+      - VOSK_MODEL_DIR=/app/models/vosk
+      - LOG_LEVEL=INFO
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - ./models:/app/models
+      - voiceos-data:/app/data
+    depends_on:
+      - rasa
+      - ollama
+      - libretranslate
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Rasa NLU Server ────────────────────────────────────────
+  rasa:
+    image: rasa/rasa:3.6.0
+    container_name: voiceos-rasa
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./rasa:/app
+    command: run --enable-api --cors "*" --debug
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Ollama LLM Server ──────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: voiceos-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    # Pull llama3.2 on startup
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2 && wait"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ─── LibreTranslate ─────────────────────────────────────────
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: voiceos-translate
+    ports:
+      - "5001:5000"
+    environment:
+      - LT_LOAD_ONLY=en,es,fr,de,it,pt,zh,ar,hi,ja,ru,ko
+      - LT_THREADS=4
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+
+  # ─── Redis (session/cache store) ────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: voiceos-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  voiceos-data:
+  ollama-data:

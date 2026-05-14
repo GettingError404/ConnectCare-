@@ -1,0 +1,68 @@
+version: "3.1"
+
+intents:
+  - greet
+  - farewell
+  - thanks
+  - get_weather
+  - set_timer
+  - cancel_timer
+  - check_timer
+  - play_music
+  - pause_music
+  - next_song
+  - previous_song
+  - volume_up
+  - volume_down
+  - get_news
+  - get_time
+  - get_date
+  - set_reminder
+  - tell_joke
+  - search_web
+  - get_definition
+  - control_device
+  - turn_on
+  - turn_off
+  - set_temperature
+  - general_question
+  - unknown
+
+entities:
+  - location
+  - duration
+  - time
+  - datetime
+  - artist
+  - song
+  - genre
+  - device
+  - room
+  - topic
+  - word
+  - query
+  - label
+
+slots:
+  location:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: location
+  duration:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: duration
+
+responses:
+  utter_greet:
+    - text: "Hello! How can I help you today?"
+  utter_farewell:
+    - text: "Goodbye! Have a great day!"
+  utter_fallback:
+    - text: "I'm not sure I understood that. Could you rephrase?"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
