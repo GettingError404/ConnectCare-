@@ -288,4 +288,13 @@ yarn-error.log*
 # =========================
 # OS
 # =========================
+.DS_Store
+Thumbs.db
 desktop.ini
+
+# Local model files
+agent/models/
+
+# Generated / local environment
+.venv/
+
