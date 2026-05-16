@@ -55,6 +55,8 @@ MQTT_BROKER_PORT=1883
 USE_CELERY=false
 ```
 
+When running inside Docker Compose, use the service name `redis` instead of `localhost` for Redis-based URLs. The compose file should override `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, and `REDIS_URL` to `redis://redis:6379/...`.
+
 Run locally
 
 ```bash

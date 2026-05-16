@@ -11,6 +11,7 @@ import uuid
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "20260508_1210_rbac_seed"
 down_revision = "20260508_1200_rbac"

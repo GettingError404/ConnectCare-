@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.api.v1.api import api_router
@@ -6,6 +7,7 @@ from app.db.database import engine
 from sqlalchemy import text
 
 from app.core.logging import configure_logging, get_logger, request_id_ctx
+from app.middleware.tenant_context import TenantContextMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
 
 
@@ -14,6 +16,7 @@ logger = get_logger("app.main")
 
 app = FastAPI()
 app.add_middleware(LoggingMiddleware, logger_name="app")
+app.add_middleware(TenantContextMiddleware)
 
 # Mount the single aggregated API router under the global version prefix
 app.include_router(api_router, prefix="/api/v1")
@@ -21,8 +24,12 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.exception_handler(RequestValidationError)
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.warning("validation_error", extra={"path": request.url.path, "errors": exc.errors()})
-    return JSONResponse(status_code=400, content={"detail": exc.errors(), "request_id": request_id_ctx.get()})
+    safe_errors = jsonable_encoder(
+        exc.errors(),
+        custom_encoder={bytes: lambda b: b.decode("utf-8", errors="replace")},
+    )
+    logger.warning("validation_error", extra={"path": request.url.path, "errors": safe_errors})
+    return JSONResponse(status_code=400, content={"detail": safe_errors, "request_id": request_id_ctx.get()})
 
 
 @app.exception_handler(Exception)

@@ -7,6 +7,17 @@ from typing import Optional
 request_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("request_id", default=None)
 
 
+class SafeExtraFormatter(logging.Formatter):
+    """Formatter that guarantees required structured fields exist on every record."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        if not hasattr(record, "request_id"):
+            record.request_id = request_id_ctx.get() or "-"
+        if not hasattr(record, "service"):
+            record.service = "-"
+        return super().format(record)
+
+
 class RequestIdFilter(logging.Filter):
     def __init__(self, service: str):
         super().__init__()
@@ -20,19 +31,26 @@ class RequestIdFilter(logging.Filter):
 
 def configure_logging(level: int = logging.INFO, service: str = "connectedcare-backend") -> None:
     """Configure root logger with structured-ish formatter and request_id support."""
-    handler = logging.StreamHandler()
     fmt = "%(asctime)s %(levelname)s %(service)s %(request_id)s %(name)s: %(message)s"
-    formatter = logging.Formatter(fmt)
-    handler.setFormatter(formatter)
+    filter_ = RequestIdFilter(service=service)
 
     root = logging.getLogger()
     root.setLevel(level)
-    # Avoid duplicate handlers in hot-reload/dev
-    if not any(isinstance(h, logging.StreamHandler) for h in root.handlers):
-        root.addHandler(handler)
 
-    # Add request id filter so every log record has request_id and service
-    root.addFilter(RequestIdFilter(service=service))
+    # Ensure existing handlers are safe with structured fields.
+    for handler in root.handlers:
+        handler.addFilter(filter_)
+        current = handler.formatter
+        if current is not None and hasattr(current, "_fmt") and "%(service)" in current._fmt:
+            handler.setFormatter(SafeExtraFormatter(current._fmt, datefmt=current.datefmt))
+
+    # Add one structured stream handler if none exists.
+    if not any(getattr(h, "_cc_structured", False) for h in root.handlers):
+        handler = logging.StreamHandler()
+        handler._cc_structured = True
+        handler.addFilter(filter_)
+        handler.setFormatter(SafeExtraFormatter(fmt))
+        root.addHandler(handler)
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -39,6 +39,11 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         foreign_keys="Organization.tenant_id",
     )
+    users: Mapped[list["User"]] = relationship(
+        back_populates="tenant",
+        foreign_keys="User.tenant_id",
+        lazy="selectin",
+    )
     roles: Mapped[list["Role"]] = relationship(
         back_populates="tenant",
         cascade="all, delete-orphan",

@@ -1,14 +1,15 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from jose import jwt
-from datetime import datetime, timedelta
 import uuid
 import secrets
 
 from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_token
+from app.models.rbac import UserRole
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest
 from app.repositories.auth import SessionRepository, RefreshTokenRepository
@@ -18,7 +19,12 @@ REFRESH_EXPIRE_DAYS = 30
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    return db.query(User).filter(User.email == email).one_or_none()
+    return (
+        db.query(User)
+        .options(selectinload(User.user_roles).selectinload(UserRole.role))
+        .filter(User.email == email)
+        .one_or_none()
+    )
 
 
 def create_user(db: Session, payload: RegisterRequest) -> User:
@@ -30,6 +36,18 @@ def create_user(db: Session, payload: RegisterRequest) -> User:
     user = User(email=payload.email, full_name=payload.name, password_hash=hashed)
     try:
         db.add(user)
+        db.flush()
+
+        tenant = Tenant(
+            name=f"{payload.name} Tenant",
+            slug=f"user-{user.id.hex[:12]}",
+            description=f"Auto-created personal tenant for {payload.email}",
+            is_active=True,
+        )
+        db.add(tenant)
+        db.flush()
+
+        user.tenant_id = tenant.id
         db.commit()
         db.refresh(user)
         return user
@@ -46,11 +64,16 @@ def authenticate_user(db: Session, payload: LoginRequest) -> User:
 
 
 def _default_token_payload(user: User) -> dict:
-    data = {"user_id": str(user.id)}
+    data = {"sub": str(user.id), "user_id": str(user.id)}
     if user.tenant_id:
         data["tenant_id"] = str(user.tenant_id)
-    if hasattr(user, "roles") and user.roles:
-        data["roles"] = [role.slug for role in user.roles if not getattr(role, "deleted_at", None)]
+    roles = [
+        assignment.role.slug
+        for assignment in getattr(user, "user_roles", [])
+        if assignment.is_active and assignment.role and not getattr(assignment.role, "deleted_at", None)
+    ]
+    if roles:
+        data["roles"] = sorted(set(roles))
     return data
 
 
@@ -64,12 +87,13 @@ def create_token_pair(db: Session, user: User, device_info: Optional[str] = None
     # create access token
     access_expires = timedelta(minutes=60)
     access_payload = _default_token_payload(user)
+    access_payload["session_id"] = str(session.id)
     access_token = create_access_token(access_payload, expires_delta=access_expires)
 
     # create refresh token (opaque jti + family)
     jti = uuid.uuid4().hex
     family_id = secrets.token_hex(16)
-    refresh_payload = {**_default_token_payload(user), "jti": jti, "family_id": family_id}
+    refresh_payload = {**_default_token_payload(user), "session_id": str(session.id), "jti": jti, "family_id": family_id}
     refresh_token = create_refresh_token(refresh_payload, expires_delta=timedelta(days=REFRESH_EXPIRE_DAYS))
 
     # persist refresh record
@@ -88,7 +112,7 @@ def rotate_refresh_token(db: Session, refresh_token_str: str) -> dict:
 
     jti = payload.get("jti")
     family_id = payload.get("family_id")
-    user_id = payload.get("user_id")
+    user_id = payload.get("sub") or payload.get("user_id")
     if not jti or not family_id or not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token payload")
 
@@ -101,7 +125,9 @@ def rotate_refresh_token(db: Session, refresh_token_str: str) -> dict:
 
     # rotate: create new jti and token, mark old as revoked/replaced
     new_jti = uuid.uuid4().hex
-    new_payload = {"user_id": str(user_id), "family_id": family_id, "jti": new_jti}
+    new_payload = {"sub": str(user_id), "user_id": str(user_id), "family_id": family_id, "jti": new_jti}
+    if stored.session_id:
+        new_payload["session_id"] = str(stored.session_id)
     new_refresh_token = create_refresh_token(new_payload, expires_delta=timedelta(days=REFRESH_EXPIRE_DAYS))
     expires_at = datetime.utcnow() + timedelta(days=REFRESH_EXPIRE_DAYS)
     refresh_repo.create(jti=new_jti, family_id=family_id, user_id=stored.user_id, session_id=stored.session_id, expires_at=expires_at)
@@ -120,11 +146,15 @@ def rotate_refresh_token(db: Session, refresh_token_str: str) -> dict:
 
 def revoke_refresh(db: Session, refresh_token_str: str):
     refresh_repo = RefreshTokenRepository(db)
+    session_repo = SessionRepository(db)
     try:
         payload = decode_token(refresh_token_str)
     except Exception:
         return
     jti = payload.get("jti")
     if jti:
+        stored = refresh_repo.get_by_jti(jti)
+        if stored and stored.session_id:
+            session_repo.revoke_session(stored.session_id)
         refresh_repo.revoke(jti)
 

@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime
 from uuid import UUID
 
 from celery import Task
@@ -20,17 +21,23 @@ logger = logging.getLogger(__name__)
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
 )
-def process_vital_data(self: Task, vital_id: str) -> None:
+def process_vital_data(self: Task, vital_id: str, vital_recorded_at: str) -> None:
     """Background processing for a HealthVital record.
 
     Fetches vital, logs processing steps and is retried on exception with backoff.
     """
     db = SessionLocal()
     try:
-        logger.info("task_start", extra={"vital_id": vital_id})
-        vital = db.execute(select(HealthVital).where(HealthVital.id == UUID(vital_id))).scalar_one_or_none()
+        recorded_at = datetime.fromisoformat(vital_recorded_at)
+        logger.info("task_start", extra={"vital_id": vital_id, "vital_recorded_at": vital_recorded_at})
+        vital = db.execute(
+            select(HealthVital).where(
+                HealthVital.id == UUID(vital_id),
+                HealthVital.recorded_at == recorded_at,
+            )
+        ).scalar_one_or_none()
         if not vital:
-            logger.warning("vital_not_found", extra={"vital_id": vital_id})
+            logger.warning("vital_not_found", extra={"vital_id": vital_id, "vital_recorded_at": vital_recorded_at})
             return
 
         user_id = str(vital.user_id)
@@ -53,6 +60,7 @@ def process_vital_data(self: Task, vital_id: str) -> None:
                 db=db,
                 user_id=vital.user_id,
                 vital_id=vital.id,
+                vital_recorded_at=vital.recorded_at,
                 alert_type=rule.alert_type,
                 severity=rule.severity,
                 message=rule.message,
@@ -61,6 +69,7 @@ def process_vital_data(self: Task, vital_id: str) -> None:
                 "alert_created",
                 extra={
                     "vital_id": vital_id,
+                    "vital_recorded_at": vital_recorded_at,
                     "user_id": user_id,
                     "alert_id": str(alert.id),
                     "alert_type": rule.alert_type,
@@ -68,10 +77,10 @@ def process_vital_data(self: Task, vital_id: str) -> None:
                 },
             )
 
-        logger.info("processing_complete", extra={"vital_id": vital_id, "user_id": user_id})
-        logger.info("task_success", extra={"vital_id": vital_id, "user_id": user_id})
+        logger.info("processing_complete", extra={"vital_id": vital_id, "vital_recorded_at": vital_recorded_at, "user_id": user_id})
+        logger.info("task_success", extra={"vital_id": vital_id, "vital_recorded_at": vital_recorded_at, "user_id": user_id})
     except Exception as exc:
-        logger.exception("task_failure", exc_info=exc, extra={"vital_id": vital_id})
+        logger.exception("task_failure", exc_info=exc, extra={"vital_id": vital_id, "vital_recorded_at": vital_recorded_at})
         # autoretry_for will handle retries; re-raise to let Celery retry
         raise
     finally:

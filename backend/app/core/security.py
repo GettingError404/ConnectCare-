@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.auth import UserSession
 from app.models.user import User
 
 # Environment config
@@ -68,13 +69,19 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-        if user_id is None:
+        user_id = payload.get("sub") or payload.get("user_id")
+        session_id = payload.get("session_id")
+        if user_id is None or session_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
     user = db.get(User, user_id)
-    if user is None:
+    session = db.get(UserSession, session_id)
+    if user is None or session is None or session.revoked or str(session.user_id) != str(user.id):
+        raise credentials_exception
+
+    tenant_id = payload.get("tenant_id")
+    if tenant_id and user.tenant_id and str(user.tenant_id) != str(tenant_id):
         raise credentials_exception
     return user

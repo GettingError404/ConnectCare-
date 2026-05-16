@@ -53,7 +53,7 @@ def create_vital(db: Session, payload: HealthVitalCreate) -> HealthVital:
             from app.tasks.vitals_tasks import process_vital_data
 
             # send to Celery; if broker not available, do not fail the request
-            process_vital_data.delay(str(vital.id))
+            process_vital_data.delay(str(vital.id), vital.recorded_at.isoformat())
         except Exception:
             logger.exception("Failed to enqueue vital processing task")
 

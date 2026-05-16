@@ -39,6 +39,7 @@ from app.services.tenant import (
     OrganizationUnitService,
 )
 from app.middleware.tenant_context import get_tenant_id_from_request, require_tenant_context
+from app.dependencies.authorization import require_permission
 from app.core.security import get_current_user
 from app.models.user import User
 
@@ -51,7 +52,7 @@ router = APIRouter(prefix="/tenants", tags=["Tenants"])
 def create_tenant(
     payload: TenantCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("tenants:manage")),
 ) -> Tenant:
     """Create a new tenant. (Admin-only)"""
     service = TenantService(db)

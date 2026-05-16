@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, ForeignKeyConstraint, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,7 +16,18 @@ if TYPE_CHECKING:
 class Alert(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "alerts"
     __table_args__ = (
-        UniqueConstraint("user_id", "vital_id", "alert_type", name="uq_alerts_user_vital_type"),
+        ForeignKeyConstraint(
+            ["vital_id", "vital_recorded_at"],
+            ["health_vitals.id", "health_vitals.recorded_at"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "user_id",
+            "vital_id",
+            "vital_recorded_at",
+            "alert_type",
+            name="uq_alerts_user_vital_recorded_at_type",
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -27,10 +38,10 @@ class Alert(UUIDPrimaryKeyMixin, Base):
     )
     vital_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("health_vitals.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+    vital_recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     alert_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     severity: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -22,7 +23,23 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenPair)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+async def login(request: Request, db: Session = Depends(get_db)):
+    content_type = (request.headers.get("content-type") or "").lower()
+
+    try:
+        if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            form = await request.form()
+            # Swagger OAuth2 sends username/password + optional grant_type.
+            payload = LoginRequest(
+                email=form.get("username") or form.get("email") or "",
+                password=form.get("password") or "",
+            )
+        else:
+            body = await request.json()
+            payload = LoginRequest.model_validate(body)
+    except (ValidationError, ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid login payload")
+
     user = authenticate_user(db=db, payload=payload)
     tokens = create_token_pair(db=db, user=user)
     return tokens
