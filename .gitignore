@@ -149,6 +149,8 @@ coverage/
 docker-compose.override.yml
 
 
+
+
 # =========================================
 # TYPESCRIPT
 # =========================================
@@ -298,3 +300,5 @@ agent/models/
 # Generated / local environment
 .venv/
 
+backend/*.json
+backend/debug_*.py
