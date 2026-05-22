@@ -302,3 +302,119 @@ agent/models/
 
 backend/*.json
 backend/debug_*.py
+add all these in gitignore file : # =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.venv/
+env/
+venv/
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# npm / yarn logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Playwright / Test Artifacts
+# =========================
+playwright-report/
+test-results/
+coverage/
+*.trace
+
+# =========================
+# Android / Gradle
+# =========================
+.gradle/
+local.properties
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio
+*.iml
+
+# =========================
+# Environment Files
+# =========================
+.env
+.env.local
+.env.production
+.env.development
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+cc_logcat*
+backend_sync_logs*
+sync_logcat*
+db_recent_rows*
+db_duplicates*
+response.txt
+
+# =========================
+# Screenshots / Evidence
+# =========================
+screenshots/
+evidence/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# EXCEPTION:
+!frontend/public/*.png
+
+# =========================
+# Dumps / Temp Files
+# =========================
+window*.xml
+window*.txt
+tmp*
+temp*
+*.dump
+
+# =========================
+# Reports / Generated Docs
+# =========================
+playwright-report/
+*.html
+
+# =========================
+# Docker
+# =========================
+docker-data/
+postgres-data/
+redis-data/
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.swp
