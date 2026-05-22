@@ -1,0 +1,57 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        required: true
+        default: production
+      image_tag:
+        description: Docker image tag
+        required: true
+        default: latest
+
+permissions:
+  contents: read
+
+jobs:
+  helm-template:
+    name: Helm render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+      - name: Render chart
+        run: |
+          helm lint deploy/helm/connectedcare
+          helm template connectedcare deploy/helm/connectedcare \
+            --set image.tag=${{ inputs.image_tag }} \
+            --set environment=${{ inputs.environment }}
+
+  deploy:
+    name: Deploy with Helm
+    runs-on: ubuntu-latest
+    needs: helm-template
+    environment: ${{ inputs.environment }}
+    if: ${{ secrets.KUBECONFIG != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+      - name: Write kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          printf '%s' "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+      - name: Deploy
+        run: |
+          helm upgrade --install connectedcare deploy/helm/connectedcare \
+            --namespace connectedcare \
+            --create-namespace \
+            --set image.tag=${{ inputs.image_tag }} \
+            --set environment=${{ inputs.environment }}

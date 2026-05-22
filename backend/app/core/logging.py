@@ -5,6 +5,9 @@ from typing import Optional
 
 # Context var to hold request id per request
 request_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("request_id", default=None)
+trace_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("trace_id", default=None)
+tenant_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("tenant_id", default=None)
+user_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("user_id", default=None)
 
 
 class SafeExtraFormatter(logging.Formatter):
@@ -13,6 +16,12 @@ class SafeExtraFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         if not hasattr(record, "request_id"):
             record.request_id = request_id_ctx.get() or "-"
+        if not hasattr(record, "trace_id"):
+            record.trace_id = trace_id_ctx.get() or "-"
+        if not hasattr(record, "tenant_id"):
+            record.tenant_id = tenant_id_ctx.get() or "-"
+        if not hasattr(record, "user_id"):
+            record.user_id = user_id_ctx.get() or "-"
         if not hasattr(record, "service"):
             record.service = "-"
         return super().format(record)
@@ -25,13 +34,16 @@ class RequestIdFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         record.request_id = request_id_ctx.get() or "-"
+        record.trace_id = trace_id_ctx.get() or "-"
+        record.tenant_id = tenant_id_ctx.get() or "-"
+        record.user_id = user_id_ctx.get() or "-"
         record.service = self.service
         return True
 
 
 def configure_logging(level: int = logging.INFO, service: str = "connectedcare-backend") -> None:
     """Configure root logger with structured-ish formatter and request_id support."""
-    fmt = "%(asctime)s %(levelname)s %(service)s %(request_id)s %(name)s: %(message)s"
+    fmt = "%(asctime)s %(levelname)s %(service)s %(request_id)s %(trace_id)s %(tenant_id)s %(user_id)s %(name)s: %(message)s"
     filter_ = RequestIdFilter(service=service)
 
     root = logging.getLogger()
@@ -74,4 +86,7 @@ __all__ = [
     "set_request_id",
     "clear_request_id",
     "request_id_ctx",
+    "trace_id_ctx",
+    "tenant_id_ctx",
+    "user_id_ctx",
 ]

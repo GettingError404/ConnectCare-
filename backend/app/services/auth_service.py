@@ -105,6 +105,7 @@ def create_token_pair(db: Session, user: User, device_info: Optional[str] = None
 
 def rotate_refresh_token(db: Session, refresh_token_str: str) -> dict:
     refresh_repo = RefreshTokenRepository(db)
+    session_repo = SessionRepository(db)
     try:
         payload = decode_token(refresh_token_str)
     except Exception:
@@ -122,6 +123,13 @@ def rotate_refresh_token(db: Session, refresh_token_str: str) -> dict:
         if stored and stored.family_id:
             refresh_repo.revoke_family(stored.family_id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked")
+
+    if stored.session_id:
+        session = session_repo.get_session(stored.session_id)
+        if not session or session.revoked:
+            if stored.family_id:
+                refresh_repo.revoke_family(stored.family_id)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session revoked")
 
     # rotate: create new jti and token, mark old as revoked/replaced
     new_jti = uuid.uuid4().hex

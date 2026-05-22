@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "connectedcare.fullname" . }}
+  labels:
+    {{- include "connectedcare.labels" . | nindent 4 }}
+data:
+  ENV: {{ .Values.env.ENV | quote }}
+  ALGORITHM: {{ .Values.env.ALGORITHM | quote }}
+  ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.env.ACCESS_TOKEN_EXPIRE_MINUTES | quote }}
+  REFRESH_TOKEN_EXPIRE_DAYS: {{ .Values.env.REFRESH_TOKEN_EXPIRE_DAYS | quote }}
+  LOGIN_RATE_LIMIT_ATTEMPTS: {{ .Values.env.LOGIN_RATE_LIMIT_ATTEMPTS | quote }}
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS: {{ .Values.env.LOGIN_RATE_LIMIT_WINDOW_SECONDS | quote }}
+  LOGIN_LOCKOUT_SECONDS: {{ .Values.env.LOGIN_LOCKOUT_SECONDS | quote }}
+  DATABASE_POOL_SIZE: {{ .Values.env.DATABASE_POOL_SIZE | quote }}
+  DATABASE_MAX_OVERFLOW: {{ .Values.env.DATABASE_MAX_OVERFLOW | quote }}
+  DATABASE_POOL_RECYCLE_SECONDS: {{ .Values.env.DATABASE_POOL_RECYCLE_SECONDS | quote }}
+  DATABASE_POOL_TIMEOUT_SECONDS: {{ .Values.env.DATABASE_POOL_TIMEOUT_SECONDS | quote }}
+  CORS_ALLOW_ORIGINS: {{ .Values.env.CORS_ALLOW_ORIGINS | quote }}
+  TRUSTED_HOSTS: {{ .Values.env.TRUSTED_HOSTS | quote }}
+  MAX_REQUEST_BODY_BYTES: {{ .Values.env.MAX_REQUEST_BODY_BYTES | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.env.OTEL_SERVICE_NAME | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+  OTEL_TRACES_SAMPLE_RATIO: {{ .Values.env.OTEL_TRACES_SAMPLE_RATIO | quote }}

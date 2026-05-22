@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from typing import Callable
 
-from app.core.logging import get_logger, set_request_id, clear_request_id
+from app.core.logging import get_logger, set_request_id, clear_request_id, trace_id_ctx
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -18,6 +18,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         incoming = request.headers.get("X-Request-ID") or request.headers.get("x-request-id")
         request_id = incoming or str(uuid.uuid4())
         token = set_request_id(request_id)
+        incoming_trace = request.headers.get("X-Trace-ID") or request.headers.get("x-trace-id")
+        trace_id = incoming_trace or request_id
+        trace_token = trace_id_ctx.set(trace_id)
 
         start = time.time()
         try:
@@ -48,9 +51,11 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # attach request id header
             try:
                 response.headers.setdefault("X-Request-ID", request_id)
+                response.headers.setdefault("X-Trace-ID", trace_id)
             except Exception:
                 # response may not be defined in error paths
                 pass
             clear_request_id(token)
+            trace_id_ctx.reset(trace_token)
 
         return response

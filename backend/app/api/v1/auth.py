@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import ValidationError
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -7,6 +7,7 @@ from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, UserR
 from app.services.auth_service import create_user, authenticate_user, create_token_pair, rotate_refresh_token, revoke_refresh
 from app.repositories.auth import SessionRepository, RefreshTokenRepository
 from app.core.security import get_current_user
+from app.core.login_protection import login_protection
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -23,26 +24,26 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenPair)
-async def login(request: Request, db: Session = Depends(get_db)):
-    content_type = (request.headers.get("content-type") or "").lower()
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or getattr(request.client, "host", None)
+    rate_check = login_protection.check(client_ip, form_data.username)
+    if not rate_check.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Try again later.",
+            headers={"Retry-After": str(rate_check.retry_after_seconds or 0)},
+        )
 
+    payload = LoginRequest(email=form_data.username, password=form_data.password)
     try:
-        if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
-            form = await request.form()
-            # Swagger OAuth2 sends username/password + optional grant_type.
-            payload = LoginRequest(
-                email=form.get("username") or form.get("email") or "",
-                password=form.get("password") or "",
-            )
-        else:
-            body = await request.json()
-            payload = LoginRequest.model_validate(body)
-    except (ValidationError, ValueError, TypeError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid login payload")
+        user = authenticate_user(db=db, payload=payload)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            login_protection.record_failure(client_ip, form_data.username)
+        raise
 
-    user = authenticate_user(db=db, payload=payload)
-    tokens = create_token_pair(db=db, user=user)
-    return tokens
+    login_protection.record_success(client_ip, form_data.username)
+    return create_token_pair(db=db, user=user)
 
 
 @router.post("/refresh", response_model=TokenPair)
