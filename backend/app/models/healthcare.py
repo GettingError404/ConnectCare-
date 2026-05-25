@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, date
 import enum
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     String,
@@ -14,11 +14,16 @@ from sqlalchemy import (
     Date,
     DateTime,
     Text,
+    CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UUIDPrimaryKeyMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.tenant import Tenant, Organization, OrganizationUnit
+    from app.models.user import User
 
 
 class Gender(enum.Enum):
@@ -90,8 +95,24 @@ class Elder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     health_preferences: Mapped[Optional["HealthPreferences"]] = relationship(
         back_populates="elder", uselist=False, cascade="all, delete-orphan"
     )
+    consent_records: Mapped[list["ConsentRecord"]] = relationship(
+        back_populates="elder",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    care_plans: Mapped[list["CarePlan"]] = relationship(
+        back_populates="elder",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    tenant: Mapped[Optional["Tenant"]] = relationship(lazy="selectin")
+    organization: Mapped[Optional["Organization"]] = relationship(lazy="selectin")
+    organization_unit: Mapped[Optional["OrganizationUnit"]] = relationship(lazy="selectin")
+    user: Mapped[Optional["User"]] = relationship(lazy="selectin")
 
     __table_args__ = (
+        CheckConstraint("gender IS NULL OR gender IN ('male', 'female', 'other')", name="ck_elders_gender"),
+        CheckConstraint("status IN ('active', 'inactive', 'deceased')", name="ck_elders_status"),
         Index("idx_elders_tenant_mrn", "tenant_id", "medical_record_number", unique=True),
     )
 
@@ -107,6 +128,16 @@ class Caregiver(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     availability_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
+    tenant: Mapped[Optional["Tenant"]] = relationship(lazy="selectin")
+    user: Mapped[Optional["User"]] = relationship(lazy="selectin")
+
+    __table_args__ = (
+        CheckConstraint(
+            "caregiver_type IN ('professional', 'family', 'volunteer')",
+            name="ck_caregivers_caregiver_type",
+        ),
+    )
+
 
 class Doctor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "doctors"
@@ -120,7 +151,14 @@ class Doctor(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     consultation_mode: Mapped[Optional[ConsultationMode]] = mapped_column(String(32), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
+    tenant: Mapped[Optional["Tenant"]] = relationship(lazy="selectin")
+    user: Mapped[Optional["User"]] = relationship(lazy="selectin")
+
     __table_args__ = (
+        CheckConstraint(
+            "consultation_mode IS NULL OR consultation_mode IN ('in_person', 'remote', 'hybrid')",
+            name="ck_doctors_consultation_mode",
+        ),
         Index("idx_doctors_tenant_license", "tenant_id", "license_number", unique=True),
     )
 
@@ -135,6 +173,10 @@ class FamilyMember(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_primary_contact: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     can_make_decisions: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
+    tenant: Mapped[Optional["Tenant"]] = relationship(lazy="selectin")
+    user: Mapped[Optional["User"]] = relationship(lazy="selectin")
+    elder: Mapped[Optional["Elder"]] = relationship(lazy="selectin")
+
 
 class CareRelationship(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "care_relationships"
@@ -147,6 +189,10 @@ class CareRelationship(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    tenant: Mapped[Optional["Tenant"]] = relationship(lazy="selectin")
+    elder: Mapped[Optional["Elder"]] = relationship(lazy="selectin")
+    related_user: Mapped[Optional["User"]] = relationship(lazy="selectin")
 
 
 class EmergencyContact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -185,12 +231,20 @@ class ConsentRecord(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     elder_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("elders.id", ondelete="CASCADE"), nullable=False, index=True)
     granted_to_user_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     consent_type: Mapped[str] = mapped_column(String(128), nullable=False)
-    granted_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+    granted_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, server_default="granted")
     granted_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     expires_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     revoked_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True, name="metadata")
+
+    elder: Mapped[Optional["Elder"]] = relationship(back_populates="consent_records", lazy="selectin")
+    granted_to_user: Mapped[Optional["User"]] = relationship(back_populates="consents_granted_to", lazy="selectin", foreign_keys=[granted_to_user_id])
+    granted_by_user: Mapped[Optional["User"]] = relationship(back_populates="consents_granted_by", lazy="selectin", foreign_keys=[granted_by_user_id])
 
 
 class CarePlan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -206,6 +260,16 @@ class CarePlan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    elder: Mapped[Optional["Elder"]] = relationship(back_populates="care_plans", lazy="selectin")
+    created_by_user: Mapped[Optional["User"]] = relationship(back_populates="care_plans_created", lazy="selectin", foreign_keys=[created_by])
+
+    __table_args__ = (
+        CheckConstraint(
+            "risk_level IS NULL OR risk_level IN ('low', 'medium', 'high')",
+            name="ck_care_plans_risk_level",
+        ),
+    )
 
 
 class HealthPreferences(UUIDPrimaryKeyMixin, TimestampMixin, Base):

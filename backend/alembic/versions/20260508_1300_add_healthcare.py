@@ -44,9 +44,13 @@ def upgrade() -> None:
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["organization_unit_id"], ["organization_units.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_elders_tenant_mrn", "elders", ["tenant_id", "medical_record_number"], unique=True)
+    op.create_index("idx_elders_organization_unit_id", "elders", ["organization_unit_id"])
+    op.create_index("idx_elders_user_id", "elders", ["user_id"])
     op.create_index("idx_elders_deleted_at", "elders", ["deleted_at"])
 
     op.create_table(
@@ -63,7 +67,9 @@ def upgrade() -> None:
         sa.Column("availability_status", sa.String(50), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
     )
+    op.create_index("idx_caregivers_user_id", "caregivers", ["user_id"])
 
     op.create_table(
         "doctors",
@@ -79,9 +85,11 @@ def upgrade() -> None:
         sa.Column("consultation_mode", sa.String(32), nullable=True),
         sa.Column("is_verified", sa.Boolean(), nullable=False, server_default="false"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_doctors_tenant_license", "doctors", ["tenant_id", "license_number"], unique=True)
+    op.create_index("idx_doctors_user_id", "doctors", ["user_id"])
 
     op.create_table(
         "family_members",
@@ -95,9 +103,11 @@ def upgrade() -> None:
         sa.Column("is_primary_contact", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("can_make_decisions", sa.Boolean(), nullable=False, server_default="false"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["elder_id"], ["elders.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("idx_family_members_user_id", "family_members", ["user_id"])
 
     op.create_table(
         "care_relationships",
@@ -114,8 +124,10 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["elder_id"], ["elders.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["related_user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("idx_care_relationships_related_user_id", "care_relationships", ["related_user_id"])
 
     op.create_table(
         "emergency_contacts",
@@ -169,8 +181,11 @@ def upgrade() -> None:
         sa.Column("revoked_at", sa.Date(), nullable=True),
         sa.Column("metadata", postgresql.JSONB, nullable=True),
         sa.ForeignKeyConstraint(["elder_id"], ["elders.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["granted_to_user_id"], ["users.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["granted_by_user_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("idx_consent_records_granted_to_user_id", "consent_records", ["granted_to_user_id"])
 
     op.create_table(
         "care_plans",
@@ -188,8 +203,10 @@ def upgrade() -> None:
         sa.Column("end_date", sa.Date(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.ForeignKeyConstraint(["elder_id"], ["elders.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["created_by"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("idx_care_plans_created_by", "care_plans", ["created_by"])
 
     op.create_table(
         "health_preferences",

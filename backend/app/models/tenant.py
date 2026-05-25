@@ -19,6 +19,7 @@ from app.db.base import Base, UUIDPrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
+     from app.models.auth import UserSession
     from app.models.rbac import Role, UserRole
 
 
@@ -42,6 +43,11 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     users: Mapped[list["User"]] = relationship(
         back_populates="tenant",
         foreign_keys="User.tenant_id",
+        lazy="selectin",
+    )
+    user_sessions: Mapped[list["UserSession"]] = relationship(
+        back_populates="tenant",
+        foreign_keys="UserSession.tenant_id",
         lazy="selectin",
     )
     roles: Mapped[list["Role"]] = relationship(
@@ -91,6 +97,7 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         foreign_keys="OrganizationUnit.organization_id",
     )
     user_roles: Mapped[list["UserRole"]] = relationship(
+        back_populates="organization",
         foreign_keys="UserRole.organization_id",
         lazy="selectin",
     )
@@ -147,6 +154,7 @@ class OrganizationUnit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         foreign_keys="OrganizationUnit.parent_id",
     )
     user_roles: Mapped[list["UserRole"]] = relationship(
+        back_populates="organization_unit",
         foreign_keys="UserRole.organization_unit_id",
         lazy="selectin",
     )

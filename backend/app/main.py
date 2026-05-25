@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app.api.v1.api import api_router
@@ -11,6 +11,7 @@ from app.db.database import engine
 from sqlalchemy import text
 
 from app.core.config import settings
+from app.core.metrics import CONTENT_TYPE_LATEST, generate_latest_metrics
 from app.core.logging import configure_logging, get_logger, request_id_ctx
 from app.core.observability import initialize_observability, capture_exception
 from app.middleware.tenant_context import TenantContextMiddleware
@@ -118,3 +119,8 @@ def test_db():
     except Exception as e:
         logger.exception("db_connection_error")
         return {"error": str(e), "request_id": request_id_ctx.get()}
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest_metrics(), media_type=CONTENT_TYPE_LATEST)

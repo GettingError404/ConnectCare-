@@ -1,7 +1,7 @@
 """Update devices table with metadata, ownership, and auth fields
 
 Revision ID: 20260508_1310_update_devices
-Revises: 20260506_1705_add_password_hash_and_device_name
+Revises: 20260508_1300_healthcare
 Create Date: 2026-05-08 13:10:00.000000
 
 """

@@ -122,6 +122,9 @@ class TenantRepository(TenantAwareRepository[Tenant]):
 class OrganizationRepository(TenantAwareRepository[Organization]):
     """Repository for Organization model, scoped to tenant."""
 
+    def __init__(self, db: Session, tenant_id: UUID):
+        super().__init__(db, Organization, tenant_id)
+
     def get_by_slug(self, slug: str) -> Optional[Organization]:
         """Get organization by slug within current tenant."""
         return self.db.execute(

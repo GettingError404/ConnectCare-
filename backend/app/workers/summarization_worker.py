@@ -34,6 +34,10 @@ SUMMARY_VERSION = "v1"
 DEFAULT_WINDOW_SIZE_MINUTES = 60
 
 
+def _coerce_uuid(value: str | UUID) -> UUID:
+    return value if isinstance(value, UUID) else UUID(str(value))
+
+
 class SummarizationTask(TenantAwareTask):
     """Task for generating conversation summaries"""
     
@@ -229,9 +233,10 @@ def summarize_conversation_window(
     parsed_start = datetime.fromisoformat(window_start_at) if window_start_at else None
     parsed_end = datetime.fromisoformat(window_end_at) if window_end_at else None
     
-    return self.run(
-        tenant_id=UUID(tenant_id),
-        conversation_id=UUID(conversation_id),
+    return SummarizationTask.run(
+        self,
+        tenant_id=_coerce_uuid(tenant_id),
+        conversation_id=_coerce_uuid(conversation_id),
         window_start_at=parsed_start,
         window_end_at=parsed_end,
         summary_version=summary_version,
@@ -262,8 +267,8 @@ def schedule_periodic_summarization(
     Returns:
         Task result dict with count of enqueued summaries
     """
-    tenant_uuid = UUID(tenant_id)
-    conversation_uuid = UUID(conversation_id)
+    tenant_uuid = _coerce_uuid(tenant_id)
+    conversation_uuid = _coerce_uuid(conversation_id)
     
     tenant_id_ctx.set(str(tenant_uuid))
     

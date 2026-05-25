@@ -34,6 +34,10 @@ EMBEDDING_MODEL = "placeholder-embedding-model"  # Replace with actual model nam
 EMBEDDING_VERSION = "v1"
 
 
+def _coerce_uuid(value: str | UUID) -> UUID:
+    return value if isinstance(value, UUID) else UUID(str(value))
+
+
 class EmbeddingTask(TenantAwareTask):
     """Task for generating and storing vector embeddings for chunks"""
     
@@ -191,9 +195,10 @@ def generate_chunk_embedding(
     Returns:
         Task result dict
     """
-    return self.run(
-        tenant_id=UUID(tenant_id),
-        chunk_id=UUID(chunk_id),
+    return EmbeddingTask.run(
+        self,
+        tenant_id=_coerce_uuid(tenant_id),
+        chunk_id=_coerce_uuid(chunk_id),
         embedding_model=embedding_model,
         embedding_version=embedding_version,
     )
@@ -225,8 +230,8 @@ def generate_conversation_embeddings(
     Returns:
         Task result dict with count of enqueued tasks
     """
-    tenant_uuid = UUID(tenant_id)
-    conversation_uuid = UUID(conversation_id)
+    tenant_uuid = _coerce_uuid(tenant_id)
+    conversation_uuid = _coerce_uuid(conversation_id)
     
     tenant_id_ctx.set(str(tenant_uuid))
     

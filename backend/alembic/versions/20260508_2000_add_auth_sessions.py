@@ -23,7 +23,7 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('tenant_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('tenant_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True),
         sa.Column('device_info', sa.String(length=512), nullable=True),
         sa.Column('ip_address', sa.String(length=64), nullable=True),
         sa.Column('user_agent', sa.String(length=1024), nullable=True),
@@ -31,6 +31,8 @@ def upgrade():
         sa.Column('revoked', sa.Boolean(), nullable=False, server_default=sa.text('false')),
     )
     op.create_index('idx_user_sessions_user_id', 'user_sessions', ['user_id'])
+    op.create_index('idx_user_sessions_tenant_id', 'user_sessions', ['tenant_id'])
+    op.create_index('idx_user_sessions_tenant_user_id', 'user_sessions', ['tenant_id', 'user_id'])
 
     # Create refresh_tokens table
     op.create_table(
@@ -49,32 +51,18 @@ def upgrade():
     op.create_index('idx_refresh_tokens_jti', 'refresh_tokens', ['jti'])
     op.create_index('idx_refresh_tokens_family', 'refresh_tokens', ['family_id'])
     op.create_index('idx_refresh_tokens_user', 'refresh_tokens', ['user_id'])
+    op.create_index('idx_refresh_tokens_session', 'refresh_tokens', ['session_id'])
 
 
 def downgrade():
     # drop indexes and tables idempotently
-    try:
-        op.drop_index('idx_refresh_tokens_user', table_name='refresh_tokens')
-    except Exception:
-        pass
-    try:
-        op.drop_index('idx_refresh_tokens_family', table_name='refresh_tokens')
-    except Exception:
-        pass
-    try:
-        op.drop_index('idx_refresh_tokens_jti', table_name='refresh_tokens')
-    except Exception:
-        pass
-    try:
-        op.drop_table('refresh_tokens')
-    except Exception:
-        pass
+    op.drop_index('idx_refresh_tokens_session', table_name='refresh_tokens')
+    op.drop_index('idx_refresh_tokens_user', table_name='refresh_tokens')
+    op.drop_index('idx_refresh_tokens_family', table_name='refresh_tokens')
+    op.drop_index('idx_refresh_tokens_jti', table_name='refresh_tokens')
+    op.drop_table('refresh_tokens')
 
-    try:
-        op.drop_index('idx_user_sessions_user_id', table_name='user_sessions')
-    except Exception:
-        pass
-    try:
-        op.drop_table('user_sessions')
-    except Exception:
-        pass
+    op.drop_index('idx_user_sessions_tenant_user_id', table_name='user_sessions')
+    op.drop_index('idx_user_sessions_tenant_id', table_name='user_sessions')
+    op.drop_index('idx_user_sessions_user_id', table_name='user_sessions')
+    op.drop_table('user_sessions')

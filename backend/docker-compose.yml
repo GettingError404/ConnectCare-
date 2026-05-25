@@ -73,6 +73,25 @@ services:
     command: ["sh", "-c", "celery -A app.core.celery_app.celery_app worker --loglevel=info --concurrency=1"]
     restart: always
 
+  beat:
+    build: .
+    container_name: celery-beat
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      - .:/app
+    command: ["sh", "-c", "celery -A app.core.celery_app.celery_app beat --loglevel=info"]
+    restart: always
+
   flower:
     build: .
     container_name: flower

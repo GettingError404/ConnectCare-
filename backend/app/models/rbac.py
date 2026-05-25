@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -196,11 +196,13 @@ class UserRole(UUIDPrimaryKeyMixin, Base):
         lazy="selectin",
     )
     organization: Mapped[Optional["Organization"]] = relationship(
+        back_populates="user_roles",
         foreign_keys=[organization_id],
         lazy="selectin",
         overlaps="user_roles",
     )
     organization_unit: Mapped[Optional["OrganizationUnit"]] = relationship(
+        back_populates="user_roles",
         foreign_keys=[organization_unit_id],
         lazy="selectin",
         overlaps="user_roles",
@@ -211,6 +213,10 @@ class UserRole(UUIDPrimaryKeyMixin, Base):
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "organization_unit_id IS NULL OR organization_id IS NOT NULL",
+            name="ck_user_roles_organization_unit_requires_organization",
+        ),
         Index("idx_user_roles_user_id", "user_id"),
         Index("idx_user_roles_role_id", "role_id"),
         Index("idx_user_roles_organization_id", "organization_id"),

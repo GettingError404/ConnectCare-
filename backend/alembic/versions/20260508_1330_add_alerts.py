@@ -33,6 +33,9 @@ def upgrade() -> None:
         sa.Column("cooldown_seconds", sa.Integer(), nullable=False, server_default='60'),
         sa.Column("enabled", sa.Boolean(), nullable=False, server_default='true'),
         sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["created_by"], ["users.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_alert_rule_tenant_metric", "alert_rules", ["tenant_id", "metric_name"])
@@ -55,10 +58,16 @@ def upgrade() -> None:
         sa.Column("acknowledged_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("metadata", postgresql.JSONB, nullable=True),
+        sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"]),
+        sa.ForeignKeyConstraint(["elder_id"], ["elders.id"]),
+        sa.ForeignKeyConstraint(["device_id"], ["devices.id"]),
+        sa.ForeignKeyConstraint(["alert_rule_id"], ["alert_rules.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_alert_event_tenant_time", "alert_events", ["tenant_id", "triggered_at"])
     op.create_index("idx_alert_event_elder", "alert_events", ["tenant_id", "elder_id"])
+    op.create_index("idx_alert_event_device", "alert_events", ["tenant_id", "device_id"])
+    op.create_index("idx_alert_event_rule", "alert_events", ["alert_rule_id"])
 
     op.create_table(
         "alert_escalations",
@@ -73,8 +82,10 @@ def upgrade() -> None:
         sa.Column("delivery_status", sa.String(32), nullable=True),
         sa.Column("sent_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("acknowledged", sa.Boolean(), nullable=False, server_default='false'),
+        sa.ForeignKeyConstraint(["alert_event_id"], ["alert_events.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("idx_alert_escalations_event_id", "alert_escalations", ["alert_event_id"])
 
 
 def downgrade() -> None:
