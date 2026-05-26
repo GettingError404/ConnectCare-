@@ -19,7 +19,7 @@ from app.db.base import Base, UUIDPrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
-     from app.models.auth import UserSession
+    from app.models.auth import UserSession
     from app.models.rbac import Role, UserRole
 
 

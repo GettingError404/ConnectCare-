@@ -41,7 +41,7 @@ class UserSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         lazy="selectin",
     )
 
-    __table_args__ = (
+    __table_args__ = ( 
         Index("idx_user_sessions_tenant_id", "tenant_id"),
         Index("idx_user_sessions_tenant_user_id", "tenant_id", "user_id"),
     )
