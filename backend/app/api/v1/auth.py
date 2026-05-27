@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, UserResponse, TokenPair, RefreshRequest
 from app.services.auth_service import create_user, authenticate_user, create_token_pair, rotate_refresh_token, revoke_refresh
+from app.services.auth_service_seed_hook import assign_default_role_after_register
 from app.repositories.auth import SessionRepository, RefreshTokenRepository
 from app.core.security import get_current_user
 from app.core.login_protection import login_protection
@@ -15,6 +16,9 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     user = create_user(db=db, payload=payload)
+    # Ensure default RBAC role assignment
+    if user.tenant_id:
+        assign_default_role_after_register(db=db, user_id=user.id, tenant_id=user.tenant_id)
     return UserResponse(
         id=user.id,
         email=user.email,

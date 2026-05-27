@@ -11,12 +11,13 @@ from sqlalchemy.orm import Session
 
 from app.dependencies.authorization import require_any_permission, require_permission, require_role
 from app.db.session import get_db
+from app.core.security import get_current_user
 from app.models.rbac import Permission, Role, UserRole
 from app.models.user import User
 from app.schemas.rbac import AssignRoleRequest, PermissionResponse, RoleCreate, RoleResponse, RoleUpdate, UserRoleResponse
 from app.services.rbac import AuthorizationService, PermissionService, RoleService
 
-router = APIRouter(prefix="/rbac", tags=["RBAC"])
+router = APIRouter(prefix="/rbac", tags=["RBAC"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/permissions", response_model=list[PermissionResponse])

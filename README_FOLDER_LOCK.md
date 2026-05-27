@@ -1,3 +1,4 @@
+
 # Folder Structure Lock
 
 This repo maintains a **top-level folder structure contract** to prevent accidental renames/removals/additions.
