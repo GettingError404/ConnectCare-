@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSpeechRecognition, useSpeechSynthesis } from '@/hooks/useSpeech';
+import { useVoiceSocket } from '@/hooks/useVoiceSocket';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { useSpeechSynthesis } from '@/hooks/useSpeech';
 import { detectIntent, IntentResult } from '@/services/intentService';
 import { useElderStore } from '@/store/elderStore';
 import { useAuthStore } from '@/store/authStore';
@@ -20,6 +22,10 @@ export function useVoiceEngine(options: UseVoiceEngineOptions = {}) {
   const [continuousMode, setContinuousMode] = useState(false);
   const continuousModeRef = useRef(false);
   const processingRef = useRef(false);
+  const [transcript, setTranscript] = useState('');
+  const [liveResponse, setLiveResponse] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'reconnecting'>('disconnected');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const {
     addChatMessage, reminders, updateReminderStatus, addStars, addMoodEntry,
@@ -29,35 +35,98 @@ export function useVoiceEngine(options: UseVoiceEngineOptions = {}) {
     playMusic, toggleMusicPlayback, nextTrack, prevTrack, stopMusic,
   } = store;
 
+  const { speak, isSpeaking: browserSpeaking, cancel: cancelSpeech, supported: ttsSupported } = useSpeechSynthesis();
+
+  const {
+    status: socketStatus,
+    transcript: socketTranscript,
+    assistantDraft,
+    error: socketError,
+    isThinking: socketThinking,
+    sendAudioChunk,
+    sendUserMessage,
+    stopConversation,
+    connect: connectVoiceSocket,
+    disconnect: disconnectVoiceSocket,
+    audioPlayer,
+  } = useVoiceSocket({
+    onTranscript: (payload) => {
+      setTranscript(payload.text);
+    },
+    onAgentChunk: (payload) => {
+      setLiveResponse((previous) => previous + payload.content);
+    },
+    onAgentFinal: (payload) => {
+      const finalText = payload.content;
+      const aiMsg: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: finalText,
+        timestamp: new Date().toISOString(),
+      };
+      addChatMessage(aiMsg);
+      setLiveResponse('');
+      setVoiceState('speaking');
+      if (!audioPlayer.isPlaying && ttsSupported) {
+        speak(finalText, () => {
+          processingRef.current = false;
+          if (continuousModeRef.current) restartListening();
+          else setVoiceState('idle');
+        });
+      }
+    },
+    onConnectionStatus: (status) => {
+      setConnectionStatus(status);
+      if (status === 'connected' && continuousModeRef.current) {
+        setVoiceState('listening');
+      }
+    },
+    onError: (payload) => {
+      setVoiceError(payload.message);
+      setVoiceState('error');
+    },
+  });
+
+  const { isRecording, error: recorderError, start: startRecorder, stop: stopRecorder } = useVoiceRecorder({
+    onChunk: sendAudioChunk,
+    onError: (message) => {
+      setVoiceError(message);
+      setVoiceState('error');
+    },
+    chunkDurationMs: 500,
+  });
+
+  useEffect(() => {
+    if (socketTranscript) setTranscript(socketTranscript);
+  }, [socketTranscript]);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected' && continuousModeRef.current) {
+      setVoiceState('listening');
+    } else if (connectionStatus === 'connecting') {
+      setVoiceState('processing');
+    }
+  }, [connectionStatus]);
+
+  useEffect(() => {
+    connectVoiceSocket();
+  }, [connectVoiceSocket]);
+
   const restartListening = useCallback(() => {
     if (continuousModeRef.current && !processingRef.current) {
       setTimeout(() => {
-        if (continuousModeRef.current) { startListening(); setVoiceState('listening'); }
+        if (continuousModeRef.current) {
+          startRecorder();
+          setVoiceState('listening');
+        }
       }, 800);
     }
-  }, []);
+  }, [startRecorder]);
 
-  const handleVoiceResult = useCallback((text: string) => {
-    if (processingRef.current) return;
-    processingRef.current = true;
-    processInput(text);
-  }, []);
-
-  const { isListening, transcript, error: speechError, start: startListening, stop: stopListening, supported: sttSupported } = useSpeechRecognition({
-    onResult: handleVoiceResult,
-    onEnd: () => { if (continuousModeRef.current && !processingRef.current) restartListening(); },
-    silenceTimeout: 2500,
-  });
-
-  const { speak, isSpeaking, cancel: cancelSpeech, supported: ttsSupported } = useSpeechSynthesis();
-
-  useEffect(() => {
-    if (isListening) setVoiceState('listening');
-    else if (isSpeaking) setVoiceState('speaking');
-    else if (processingRef.current) setVoiceState('processing');
-    else if (continuousModeRef.current) setVoiceState('listening');
-    else setVoiceState('idle');
-  }, [isListening, isSpeaking]);
+  const isListening = isRecording;
+  const isSpeaking = browserSpeaking || audioPlayer.isPlaying;
+  const speechError = voiceError || recorderError || socketError;
+  const sttSupported = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
   const executeAction = useCallback((result: IntentResult) => {
     const { action } = result;
@@ -167,19 +236,27 @@ export function useVoiceEngine(options: UseVoiceEngineOptions = {}) {
 
   const processInput = useCallback((text: string) => {
     setVoiceState('processing');
-    const userMsg: ChatMessage = { id: `msg-${Date.now()}`, role: 'user', content: text, timestamp: new Date().toISOString() };
+    processingRef.current = true;
+
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString(),
+    };
     addChatMessage(userMsg);
 
-    const result = detectIntent(text, {
-      reminders, name: user?.name?.split(' ')[0], vitals, checkIn, smartDevices, familyContacts, gameSession,
-    });
+    if (socketStatus === 'connected') {
+      sendUserMessage(text);
+      return;
+    }
 
-    // Handle game answers specially
-    if (result.action === 'game_answer' && (result.data as Record<string, unknown> | undefined)?.answer) {
+    const result = detectIntent(text, { reminders, smartDevices, familyContacts, callState, gameSession });
+
+    if (result.action === 'game_answer' && typeof (result.data as Record<string, unknown> | undefined)?.answer === 'string') {
       const answer = (result.data as Record<string, unknown>).answer as string;
       const skipped = Boolean((result.data as Record<string, unknown> | undefined)?.skipped);
       const gameResult = answerGame(skipped ? '' : answer);
-
 
       let responseText: string;
       if (skipped) {
@@ -194,47 +271,123 @@ export function useVoiceEngine(options: UseVoiceEngineOptions = {}) {
         if (gameResult.done) addStars(Math.max(gameSession.score * 2, 1), 'Game completed');
       }
 
-      const aiMsg: ChatMessage = { id: `msg-${Date.now() + 1}`, role: 'assistant', content: responseText, timestamp: new Date().toISOString(), intent: 'game_answer', tags: ['game'] };
-      setTimeout(() => {
-        addChatMessage(aiMsg);
-        setVoiceState('speaking');
-        if (ttsSupported) {
-          speak(responseText, () => { processingRef.current = false; if (continuousModeRef.current) restartListening(); else setVoiceState('idle'); });
-        } else { processingRef.current = false; if (continuousModeRef.current) restartListening(); else setVoiceState('idle'); }
-      }, 300);
+      const aiMsg: ChatMessage = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        intent: 'game_answer',
+        tags: ['game'],
+      };
+      addChatMessage(aiMsg);
+      setVoiceState('speaking');
+      if (ttsSupported) {
+        speak(responseText, () => {
+          processingRef.current = false;
+          if (continuousModeRef.current) restartListening();
+          else setVoiceState('idle');
+        });
+      } else {
+        processingRef.current = false;
+        if (continuousModeRef.current) restartListening();
+        else setVoiceState('idle');
+      }
       return;
     }
 
     executeAction(result);
 
-    const aiMsg: ChatMessage = { id: `msg-${Date.now() + 1}`, role: 'assistant', content: result.response, timestamp: new Date().toISOString(), intent: result.intent, tags: [result.intent] };
-    setTimeout(() => {
-      addChatMessage(aiMsg);
-      setVoiceState('speaking');
-      if (ttsSupported) {
-        speak(result.response, () => { processingRef.current = false; if (continuousModeRef.current) restartListening(); else setVoiceState('idle'); });
-      } else { processingRef.current = false; if (continuousModeRef.current) restartListening(); else setVoiceState('idle'); }
-    }, 300);
-  }, [reminders, user, vitals, checkIn, smartDevices, familyContacts, gameSession, ttsSupported]);
+    const aiMsg: ChatMessage = {
+      id: `msg-${Date.now() + 1}`,
+      role: 'assistant',
+      content: result.response,
+      timestamp: new Date().toISOString(),
+      intent: result.intent,
+      tags: [result.intent],
+    };
+    addChatMessage(aiMsg);
+    setVoiceState('speaking');
+    if (ttsSupported) {
+      speak(result.response, () => {
+        processingRef.current = false;
+        if (continuousModeRef.current) restartListening();
+        else setVoiceState('idle');
+      });
+    } else {
+      processingRef.current = false;
+      if (continuousModeRef.current) restartListening();
+      else setVoiceState('idle');
+    }
+  }, [addChatMessage, socketStatus, sendUserMessage, reminders, smartDevices, familyContacts, callState, gameSession, detectIntent, answerGame, addStars, ttsSupported, executeAction]);
 
-  const startContinuous = useCallback(() => { setContinuousMode(true); continuousModeRef.current = true; cancelSpeech(); processingRef.current = false; startListening(); setVoiceState('listening'); }, []);
-  const stopContinuous = useCallback(() => { setContinuousMode(false); continuousModeRef.current = false; processingRef.current = false; stopListening(); cancelSpeech(); setVoiceState('idle'); }, []);
-  const toggleContinuous = useCallback(() => { if (continuousModeRef.current) stopContinuous(); else startContinuous(); }, [startContinuous, stopContinuous]);
+  const startContinuous = useCallback(() => {
+    setContinuousMode(true);
+    continuousModeRef.current = true;
+    cancelSpeech();
+    processingRef.current = false;
+    startRecorder();
+    setVoiceState('listening');
+  }, [cancelSpeech, startRecorder]);
+
+  const stopContinuous = useCallback(() => {
+    setContinuousMode(false);
+    continuousModeRef.current = false;
+    processingRef.current = false;
+    stopRecorder();
+    stopConversation();
+    cancelSpeech();
+    setVoiceState('idle');
+  }, [stopRecorder, stopConversation, cancelSpeech]);
+
+  const toggleContinuous = useCallback(() => {
+    if (continuousModeRef.current) stopContinuous();
+    else startContinuous();
+  }, [startContinuous, stopContinuous]);
 
   const speakProactive = useCallback((text: string, addToChat = true) => {
-    if (addToChat) addChatMessage({ id: `msg-${Date.now()}`, role: 'assistant', content: text, timestamp: new Date().toISOString(), tags: ['proactive'] });
+    if (addToChat) {
+      addChatMessage({
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: text,
+        timestamp: new Date().toISOString(),
+        tags: ['proactive'],
+      });
+    }
     const wasContinuous = continuousModeRef.current;
-    if (wasContinuous) stopListening();
+    if (wasContinuous) {
+      stopRecorder();
+    }
     setVoiceState('speaking');
-    speak(text, () => { if (wasContinuous) restartListening(); else setVoiceState('idle'); });
-  }, []);
+    speak(text, () => {
+      if (wasContinuous) restartListening();
+      else setVoiceState('idle');
+    });
+  }, [addChatMessage, stopRecorder, speak, restartListening]);
 
-  const processTextInput = useCallback((text: string) => { processingRef.current = true; processInput(text); }, [processInput]);
+  const processTextInput = useCallback((text: string) => {
+    processingRef.current = true;
+    processInput(text);
+  }, [processInput]);
 
   return {
-    voiceState, continuousMode, isListening, isSpeaking, transcript, speechError,
-    sttSupported, ttsSupported, startContinuous, stopContinuous, toggleContinuous,
-    processTextInput, speakProactive, cancelSpeech,
+    voiceState,
+    continuousMode,
+    isListening,
+    isSpeaking,
+    transcript,
+    speechError,
+    sttSupported,
+    ttsSupported,
+    startContinuous,
+    stopContinuous,
+    toggleContinuous,
+    processTextInput,
+    speakProactive,
+    cancelSpeech,
+    connectionStatus,
+    liveResponse,
+    assistantDraft,
   };
 }
 

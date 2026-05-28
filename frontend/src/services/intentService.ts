@@ -1,4 +1,4 @@
-import { Reminder, VitalSign, CheckInSession, SmartDevice, FamilyContact, GameSession } from '@/types';
+import { Reminder, VitalSign, CheckInSession, SmartDevice, FamilyContact, GameSession, CallState } from '@/types';
 
 const greetings = () => {
   const hour = new Date().getHours();
@@ -23,6 +23,7 @@ interface IntentContext {
   smartDevices?: SmartDevice[];
   familyContacts?: FamilyContact[];
   gameSession?: GameSession;
+  callState?: CallState;
 }
 
 export function detectIntent(text: string, context?: IntentContext): IntentResult {

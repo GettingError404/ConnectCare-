@@ -2,8 +2,10 @@ from fastapi import APIRouter
 
 # Import feature routers (they must define only feature-level prefixes)
 from app.api.v1 import auth, alerts, devices, vitals, telemetry, healthcare, rbac, tenants, ws_alerts, vector_search, ai_memory
+from app.api.v1.gateway_ws_stream import router as gateway_ws_stream_router
 
 api_router = APIRouter()
+
 
 # Include feature routers as-is — do NOT re-prefix with /api/v1 here.
 # Each feature router should declare only its feature prefix (e.g. "/auth").
