@@ -15,6 +15,9 @@ interface VoiceCompanionProps {
   transcript: string;
   speechError: string | null;
   sttSupported: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+  liveResponse: string;
+  assistantDraft: string;
   onToggleContinuous: () => void;
   onProcessText: (text: string) => void;
   onCancelSpeech: () => void;
@@ -28,6 +31,9 @@ const VoiceCompanion: React.FC<VoiceCompanionProps> = ({
   transcript,
   speechError,
   sttSupported,
+  connectionStatus,
+  liveResponse,
+  assistantDraft,
   onToggleContinuous,
   onProcessText,
   onCancelSpeech,
@@ -46,11 +52,24 @@ const VoiceCompanion: React.FC<VoiceCompanionProps> = ({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  const connectionLabel = connectionStatus === 'connected'
+    ? 'Connected'
+    : connectionStatus === 'connecting'
+      ? 'Connecting...'
+      : connectionStatus === 'reconnecting'
+        ? 'Reconnecting...'
+        : 'Disconnected';
+
   return (
     <div className="flex flex-col h-full">
       {/* Voice State Bar */}
-      <div className="px-4 py-2 border-b border-border bg-card flex items-center justify-between">
-        <VoiceStateIndicator state={voiceState} transcript={transcript} />
+      <div className="px-4 py-2 border-b border-border bg-card flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <VoiceStateIndicator state={voiceState} transcript={transcript} />
+          <div className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
+            {connectionLabel}
+          </div>
+        </div>
         <button
           onClick={onToggleContinuous}
           disabled={!sttSupported}
@@ -82,6 +101,7 @@ const VoiceCompanion: React.FC<VoiceCompanionProps> = ({
             </div>
           </div>
         ))}
+
         {isListening && transcript && (
           <div className="flex justify-end">
             <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-primary/20 text-foreground rounded-br-md border border-primary/30">
@@ -89,6 +109,16 @@ const VoiceCompanion: React.FC<VoiceCompanionProps> = ({
             </div>
           </div>
         )}
+
+        {(liveResponse || assistantDraft) && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-secondary/10 text-foreground rounded-bl-md border border-secondary/30">
+              <p className="elder-text-base leading-relaxed">{liveResponse || assistantDraft}</p>
+              <p className="text-[10px] mt-1 opacity-60">Assistant response streaming</p>
+            </div>
+          </div>
+        )}
+
         <div ref={chatEndRef} />
       </div>
 
@@ -97,7 +127,7 @@ const VoiceCompanion: React.FC<VoiceCompanionProps> = ({
         {/* Big Mic Button */}
         <div className="flex justify-center mb-4">
           <button
-            onClick={onToggleContinuous}
+            onClick={voiceState === 'speaking' ? onCancelSpeech : onToggleContinuous}
             disabled={!sttSupported}
             className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
               continuousMode

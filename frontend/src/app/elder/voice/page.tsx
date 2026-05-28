@@ -14,6 +14,9 @@ export default function ElderVoicePage() {
     transcript,
     speechError,
     sttSupported,
+    connectionStatus,
+    liveResponse,
+    assistantDraft,
     toggleContinuous,
     processTextInput,
     cancelSpeech,
@@ -32,6 +35,9 @@ export default function ElderVoicePage() {
             transcript={transcript}
             speechError={speechError}
             sttSupported={sttSupported}
+            connectionStatus={connectionStatus}
+            liveResponse={liveResponse}
+            assistantDraft={assistantDraft}
             onToggleContinuous={toggleContinuous}
             onProcessText={processTextInput}
             onCancelSpeech={cancelSpeech}

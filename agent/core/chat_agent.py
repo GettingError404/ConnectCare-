@@ -10,12 +10,23 @@ class ChatAgent:
         self.response_gen = ResponseGenerator()
         self.sentiment = SentimentAnalyzer()
 
-        # simple memory (upgrade later to Redis/DB)
-        self.sessions = {}
+        # Agent is stateless. Conversation context must be provided by
+        # external persistence/retrieval services (ConversationContextService).
 
-    def process(self, user_id: str, message: str):
+    def process(self, user_id: str, message: str, context: list | None = None):
+        """Process a user message and return an agent response.
+
+        Parameters:
+        - user_id: identifier for the user (for logging/audit)
+        - message: the incoming user message text
+        - context: optional list of prior message dicts provided by the
+          ConversationContextService. Example: [{"user":..., "bot":...}, ...]
+
+        The agent does not persist or cache conversations locally. Persistence
+        and retrieval are the responsibility of backend services.
+        """
         # 1. Context
-        context = self.sessions.get(user_id, [])
+        context = context or []
 
         # 2. NLP
         nlp_result = self.nlp.process(message)
@@ -37,10 +48,7 @@ class ChatAgent:
             context=context
         )
 
-        # 6. Update memory
-        context.append({"user": message, "bot": response})
-        self.sessions[user_id] = context[-10:]  # keep last 10
-
+        # Do NOT store context locally - return response and let caller persist.
         return {
             "response": response,
             "intent": intent,
